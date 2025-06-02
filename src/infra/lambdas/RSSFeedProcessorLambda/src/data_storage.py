@@ -4,17 +4,23 @@ import os
 import logging
 from random import randint
 from datetime import datetime
+from pymongo import MongoClient
 
 from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
 
 logger = logging.getLogger()
 
 s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
 
-CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")) 
-DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE_NAME")
+CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET"))
 storage_strategy = os.environ.get('STORAGE_STRATEGY')
+
+MONGODB_URL = os.getenv("MONGODB_URL")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME")
+MONGODB_COLLECTION_NAME = os.getenv("MONGODB_COLLECTION_NAME", "rss_feeds")
+
+mongo_client = MongoClient(MONGODB_URL)
+feeds_collection = mongo_client[MONGODB_DB_NAME][MONGODB_COLLECTION_NAME]
 
 ##### Article Storage #####
 def save_article(article:dict, strategy:str):
@@ -94,14 +100,15 @@ def s3_save_article(article:dict):
 
 
 ###### Feed Storage ######
-def update_rss_feed(feed:dict, last_pub_dt:int):
+def update_rss_feed(feed: dict, last_pub_dt: int):
     try:
-        table = dynamodb.Table(DYNAMODB_TABLE)
-        table.update_item(
-            Key={'url': feed['u']},
-            UpdateExpression='SET dt = :val',
-            ExpressionAttributeValues={':val': last_pub_dt}
+        feeds_collection.update_one(
+            {"url": feed["u"]},
+            {"$set": {"dt": last_pub_dt}},
+            upsert=True,
         )
-        logger.info(f"Updated RSS feed in DynamoDB: {feed['u']} with dt: {feed['dt']}")
+        logger.info(
+            f"Updated RSS feed in MongoDB: {feed['u']} with dt: {last_pub_dt}"
+        )
     except Exception as e:
         logger.error(f"Failed to update RSS feed: {str(e)}")

@@ -4,15 +4,20 @@ import boto3
 from decimal import Decimal
 from datetime import datetime
 import logging
+from pymongo import MongoClient
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
 
-dynamodb = boto3.resource('dynamodb')
 sqs = boto3.client('sqs')
 
 SQS_QUEUE_URL = os.environ['SQS_QUEUE_URL']
-DYNAMODB_TABLE_NAME = os.environ['DYNAMODB_TABLE_NAME']
+MONGODB_URL = os.environ['MONGODB_URL']
+MONGODB_DB_NAME = os.environ['MONGODB_DB_NAME']
+MONGODB_COLLECTION_NAME = os.environ.get('MONGODB_COLLECTION_NAME', 'rss_feeds')
+
+mongo_client = MongoClient(MONGODB_URL)
+feeds_collection = mongo_client[MONGODB_DB_NAME][MONGODB_COLLECTION_NAME]
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -21,13 +26,10 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(obj)
 
 def handler(event, context):
-    table = dynamodb.Table(DYNAMODB_TABLE_NAME)
     messages_sent = 0
 
-    # Scan the DynamoDB table
-    response = table.scan()
-
-    for item in response['Items']:
+    # Iterate over all feeds in MongoDB
+    for item in feeds_collection.find({}):
         rss_url = item.get('url')
         rss_dt = item.get('dt')
 
