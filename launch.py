@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import subprocess
 import boto3
 from dotenv import load_dotenv
 import logging
@@ -70,31 +71,31 @@ lambda_client = boto3.client("lambda")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-from src.infra.deploy_infrastructure import deploy_infrastructure
+from src.infra.import deploy_infrastructure
 from src.infra.lambdas.RSSFeedProcessorLambda.deploy_rss_feed_lambda import deploy_lambda
 from src.infra.lambdas.lambda_utils.update_lambda_env_vars import update_env_vars
 from src.feed_management.upload_rss_feeds import upload_rss_feeds
 
+def main():
+    if "--local" in sys.argv:
+        subprocess.run(["docker", "compose", "up", "-d"], check=False)
+        return
 
-def main(local: bool = False) -> None:
-    if local:
-        start_docker_containers()
-    else:
-        # Deploy infrastructure
-        deploy_infrastructure()
-        logging.info("Finished Deploying Infrastructure")
+    # Deploy infrastructure
+    deploy_infrastructure()
+    logging.info("Finished Deploying Infrastructure")
+   
+    # Deploy Lambda function
+    deploy_lambda()
+    logging.info("Finished Deploying Lambda")
 
-        # Deploy Lambda function
-        deploy_lambda()
-        logging.info("Finished Deploying Lambda")
+    deploy_sqs_filler()
+    logging.info("Finished Deploying Queue Filler Lambda")
 
-        deploy_sqs_filler()
-        logging.info("Finished Deploying Queue Filler Lambda")
+    # Update Lambda environment variables
+    update_env_vars(os.getenv("LAMBDA_FUNCTION_NAME"))
+    print("Finished Environment Variable Updates")
 
-        # Update Lambda environment variables
-        update_env_vars(os.getenv("LAMBDA_FUNCTION_NAME"))
-        print("Finished Environment Variable Updates")
-    
     # Upload RSS feeds
     rss_feeds_file = os.path.join(current_dir, "rss_feeds.json")
     if os.path.exists(rss_feeds_file):

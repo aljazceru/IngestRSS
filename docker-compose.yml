@@ -1,0 +1,80 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      REDIS_QUEUE_NAME: rss-feed-queue
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DB_NAME: ingestrss
+      MONGODB_COLLECTION_NAME: rss_feeds
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: ingestrss
+      STORAGE_STRATEGY: s3
+      LOG_LEVEL: INFO
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/scheduler/Dockerfile
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      REDIS_QUEUE_NAME: rss-feed-queue
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DB_NAME: ingestrss
+      MONGODB_COLLECTION_NAME: rss_feeds
+      LOG_LEVEL: INFO
+volumes:
+  mongo-data:
+  minio-data:
