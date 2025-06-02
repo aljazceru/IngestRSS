@@ -1,10 +1,9 @@
 import json
 import os
-import boto3
-from decimal import Decimal
-from datetime import datetime
 import logging
 from pymongo import MongoClient
+from datetime import datetime
+import redis
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -54,6 +53,6 @@ def handler(event, context):
     logger.info(f"Sent {messages_sent} messages to SQS at {datetime.now().isoformat()}")
 
     return {
-        'statusCode': 200,
-        'body': json.dumps(f'Sent {messages_sent} RSS URLs to SQS')
+        "statusCode": 200,
+        "body": json.dumps(f"Sent {messages_sent} RSS URLs to Redis"),
     }

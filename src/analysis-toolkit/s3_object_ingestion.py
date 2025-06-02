@@ -1,17 +1,20 @@
-import boto3
+from minio import Minio
+import os
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from collections import defaultdict
 
 def get_s3_object_creation_dates(bucket_name):
-    s3 = boto3.client('s3')
+    client = Minio(
+        os.getenv("MINIO_ENDPOINT"),
+        access_key=os.getenv("MINIO_ACCESS_KEY"),
+        secret_key=os.getenv("MINIO_SECRET_KEY"),
+        secure=False
+    )
     creation_dates = []
 
-    # List all objects in the bucket
-    paginator = s3.get_paginator('list_objects_v2')
-    for page in paginator.paginate(Bucket=bucket_name):
-        for obj in page.get('Contents', []):
-            creation_dates.append(obj['LastModified'].date())
+    for obj in client.list_objects(bucket_name, recursive=True):
+        creation_dates.append(obj.last_modified.date())
 
     return creation_dates
 
@@ -47,7 +50,7 @@ def plot_creation_dates(dates):
     print("Graph saved as 's3_object_creation_dates.png'")
 
 def main():
-    bucket_name = 'open-rss-articles-us-east-1'
+    bucket_name = os.getenv('MINIO_BUCKET')
     dates = get_s3_object_creation_dates(bucket_name)
     plot_creation_dates(dates)
 

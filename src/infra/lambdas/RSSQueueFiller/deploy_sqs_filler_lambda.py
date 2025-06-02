@@ -49,20 +49,12 @@ def deploy_sqs_filler():
                                 'ParameterValue': os.getenv('QUEUE_FILLER_LAMBDA_NAME')
                             },
                             {
-                                'ParameterKey': 'SqsQueueUrl',
-                                'ParameterValue': os.getenv('SQS_QUEUE_URL')
+                                'ParameterKey': 'RedisUrl',
+                                'ParameterValue': os.getenv('REDIS_URL')
                             },
                             {
-                                'ParameterKey': 'DynamoDbTableName',
-                                'ParameterValue': os.getenv('DYNAMODB_TABLE_NAME')
-                            },
-                            {
-                                'ParameterKey': 'DynamoDbTableArn',
-                                'ParameterValue': os.getenv('DYNAMODB_TABLE_ARN')
-                            },
-                            {
-                                'ParameterKey': 'SqsQueueArn',
-                                'ParameterValue': os.getenv('SQS_QUEUE_ARN')
+                                'ParameterKey': 'RedisQueueName',
+                                'ParameterValue': os.getenv('REDIS_QUEUE_NAME')
                             },
                             {
                                 'ParameterKey': 'LambdaCodeS3Bucket',

@@ -37,7 +37,7 @@ def main():
     logging.info("Finished Deploying Lambda")
 
     deploy_sqs_filler()
-    logging.info("Finished Deploying SQS Filler Lambda")
+    logging.info("Finished Deploying Queue Filler Lambda")
 
     # Update Lambda environment variables
     update_env_vars(os.getenv("LAMBDA_FUNCTION_NAME"))
@@ -54,6 +54,7 @@ def main():
             os.getenv('MONGODB_DB_NAME'),
             os.getenv('MONGODB_COLLECTION_NAME', 'rss_feeds')
         )
+
     else:
         print(f"WARNING: {rss_feeds_file} not found. Skipping RSS feed upload.")
 

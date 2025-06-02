@@ -28,15 +28,10 @@ def update_env_vars(function_name):
         'S3_LAMBDA_ZIPPED_BUCKET_NAME': os.environ.get('S3_LAMBDA_ZIPPED_BUCKET_NAME'),
         'S3_LAYER_BUCKET_NAME': os.environ.get('S3_LAYER_BUCKET_NAME'),
         'S3_LAYER_KEY_NAME': os.environ.get('S3_LAYER_KEY_NAME'),
-        
-        # DynamoDB Configuration
-        'DYNAMODB_TABLE_NAME': os.environ.get('DYNAMODB_TABLE_NAME'),
-        'DYNAMODB_TABLE_ARN': os.environ.get('DYNAMODB_TABLE_ARN'),
-        
-        # SQS Configuration
-        'SQS_QUEUE_NAME': os.environ.get('SQS_QUEUE_NAME'),
-        'SQS_QUEUE_URL': os.environ.get('SQS_QUEUE_URL'),
-        'SQS_QUEUE_ARN': os.environ.get('SQS_QUEUE_ARN'),
+
+        # Redis Configuration
+        'REDIS_URL': os.environ.get('REDIS_URL'),
+        'REDIS_QUEUE_NAME': os.environ.get('REDIS_QUEUE_NAME'),
         
         # Queue Filler Lambda Configuration
         'QUEUE_FILLER_LAMBDA_NAME': os.environ.get('QUEUE_FILLER_LAMBDA_NAME'),
