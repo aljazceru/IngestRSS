@@ -6,3 +6,4 @@ constructs==10.2.69
 pinecone
 openai
 tqdm
+prometheus-client==0.20.*
