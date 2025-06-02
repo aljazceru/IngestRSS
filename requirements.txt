@@ -10,3 +10,4 @@ tqdm
 prometheus-clien
 redis
 minio
+schedule==1.*
