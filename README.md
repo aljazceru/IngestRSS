@@ -58,7 +58,10 @@ The primary goal of IngestRSS is to provide researchers with a robust, scalable 
 
 ## 📊 Monitoring
 
-The Lambda function logs its activities to CloudWatch Logs. You can monitor the function's performance and any errors through the AWS CloudWatch console.
+The Lambda function logs are still sent to CloudWatch Logs, however metrics are
+exposed using [Prometheus](https://prometheus.io/). When the processor runs it
+starts a tiny HTTP server that serves metrics on `/metrics` (port `8000` by
+default). These metrics can be scraped by a Prometheus server for monitoring.
 
 ## 🤝 Contributing
 
