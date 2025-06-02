@@ -143,13 +143,6 @@ def deploy_infrastructure():
     key_info = kms_client.describe_key(KeyId=kms_key_id)
     kms_key_arn = key_info['KeyMetadata']['Arn']
 
-    deploy_cloudformation('dynamo.yaml', 'DynamoDB', 
-                          parameters=[
-                            {
-                                'ParameterKey': 'DynamoDBName',
-                                'ParameterValue': os.environ.get('DYNAMODB_TABLE_NAME', 'default-table-name')
-                            }
-                        ])
     
 
     deploy_cloudformation('s3.yaml', 'S3',
@@ -164,13 +157,6 @@ def deploy_infrastructure():
                             {
                                 'ParameterKey': 'BucketName',
                                 'ParameterValue': os.getenv('S3_LAMBDA_ZIPPED_BUCKET_NAME')
-                            }
-                        ])
-    deploy_cloudformation('sqs.yaml', 'SQS',
-                          parameters=[
-                            {
-                                'ParameterKey': 'SQSQueueName',
-                                'ParameterValue': os.environ.get('SQS_QUEUE_NAME', 'default-queue-name')
                             }
                         ])
     deploy_cloudformation('lambda_role.yaml', 'Lambda', force_recreate=True,

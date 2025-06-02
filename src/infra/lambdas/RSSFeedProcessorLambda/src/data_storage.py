@@ -2,7 +2,6 @@ import boto3
 import json
 import os
 import logging
-from random import randint
 from datetime import datetime
 
 from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
@@ -10,10 +9,8 @@ from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
 logger = logging.getLogger()
 
 s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
 
-CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")) 
-DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE_NAME")
+CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET"))
 storage_strategy = os.environ.get('STORAGE_STRATEGY')
 
 ##### Article Storage #####
@@ -51,8 +48,6 @@ def pinecone_save_article(article:dict):
     logger.info("Upserting article to Pinecone")
     upsert_vectors(index, data, namespace) 
 
-def dynamodb_save_article(article:dict):
-    pass
 
 def s3_save_article(article:dict):    
     logger.info("Saving article to S3")
@@ -94,14 +89,20 @@ def s3_save_article(article:dict):
 
 
 ###### Feed Storage ######
-def update_rss_feed(feed:dict, last_pub_dt:int):
+RSS_FEEDS_FILE = os.getenv("RSS_FEEDS_FILE", "rss_feeds.json")
+
+
+def update_rss_feed(feed: dict, last_pub_dt: int):
     try:
-        table = dynamodb.Table(DYNAMODB_TABLE)
-        table.update_item(
-            Key={'url': feed['u']},
-            UpdateExpression='SET dt = :val',
-            ExpressionAttributeValues={':val': last_pub_dt}
-        )
-        logger.info(f"Updated RSS feed in DynamoDB: {feed['u']} with dt: {feed['dt']}")
+        if not os.path.exists(RSS_FEEDS_FILE):
+            return
+        with open(RSS_FEEDS_FILE, "r") as f:
+            feeds = json.load(f)
+        for item in feeds:
+            if item.get("u") == feed["u"]:
+                item["dt"] = int(last_pub_dt)
+        with open(RSS_FEEDS_FILE, "w") as f:
+            json.dump(feeds, f)
+        logger.info(f"Updated RSS feed {feed['u']} with dt: {last_pub_dt}")
     except Exception as e:
         logger.error(f"Failed to update RSS feed: {str(e)}")

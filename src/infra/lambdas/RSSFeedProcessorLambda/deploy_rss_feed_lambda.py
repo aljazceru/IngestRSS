@@ -80,26 +80,8 @@ def update_function_configuration(lambda_client, function_name, handler, role, t
 
 @retry_with_backoff()
 def configure_sqs_trigger(lambda_client, function_name, queue_arn):
-    event_source_mapping = {
-        'FunctionName': function_name,
-        'EventSourceArn': queue_arn,
-        'BatchSize': 1,
-        'MaximumBatchingWindowInSeconds': 0,
-        'ScalingConfig': {
-            'MaximumConcurrency': 50
-        }
-    }
-
-    try:
-        response = lambda_client.create_event_source_mapping(**event_source_mapping)
-        print(f"SQS trigger configured successfully for {function_name}")
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ResourceConflictException':
-            print(f"SQS trigger already exists for {function_name}. Updating configuration...")
-            # If you want to update existing trigger, you'd need to list existing mappings and update them
-            # This is left as an exercise as it requires additional error handling and logic
-        else:
-            raise e
+    """Placeholder for backward compatibility. Redis deployment uses no SQS trigger."""
+    return
 
 @retry_with_backoff()
 def create_function(lambda_client, function_name, runtime, role, handler, zip_file, timeout, memory, layers, kms_key_id, policy):
@@ -218,13 +200,6 @@ def deploy_lambda():
             print(f"Lambda function '{LAMBDA_NAME}' not found. Creating new function...")
             policy = get_lambda_policy()
             create_function(lambda_client, LAMBDA_NAME, LAMBDA_RUNTIME, LAMBDA_ROLE_ARN, LAMBDA_HANDLER, deployment_package, LAMBDA_TIMEOUT, LAMBDA_MEMORY, layers, kms_key_id, policy)
-
-        # Configure SQS trigger
-        queue_arn = os.getenv('SQS_QUEUE_ARN')  # Make sure to set this environment variable
-        if queue_arn:
-            configure_sqs_trigger(lambda_client, LAMBDA_NAME, queue_arn)
-        else:
-            print("Warning: SQS_QUEUE_ARN not set. Skipping SQS trigger configuration.")
 
         print("Lambda deployment completed successfully!")
 
