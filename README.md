@@ -2,7 +2,7 @@
 
 ![Header](wallpaper.png)
 
-IngestRSS is an AWS-based RSS feed processing system that automatically fetches, processes, and stores articles from specified RSS feeds. This project is designed to support social scientists in progressing research on news and media.
+IngestRSS is a Docker-based RSS feed processing system that automatically fetches, processes, and stores articles from specified RSS feeds. This project is designed to support social scientists in progressing research on news and media. The application can now run entirely on your local machine without any AWS dependencies.
 
 ## 🎯 Purpose
 
@@ -13,8 +13,7 @@ The primary goal of IngestRSS is to provide researchers with a robust, scalable 
 ### Prerequisites
 
 - Python 3.12
-- AWS account with necessary permissions
-- AWS CLI configured with your credentials
+- Docker installed and running
 
 ### Setup
 
@@ -30,35 +29,25 @@ The primary goal of IngestRSS is to provide researchers with a robust, scalable 
    ```
 
 3. Set up your environment variables:
-   - Find the file named `template.env` in your folder.
-   - Make a copy of this file in the same folder.
-   - Rename the copy to `.env` (make sure to include the dot at the start).
-   - Open the `.env` file and fill in your information where you see `***`.
-   
-   Here's what you need to fill in:
-   ```
-   AWS_REGION=***
-   AWS_ACCOUNT_ID=***
-   AWS_ACCESS_KEY_ID=***
-   AWS_SECRET_ACCESS_KEY=***
-   ```
-   
-   The other settings in the file are already set up for you, but you can change them if you need to.
+   - Copy `local.env.template` to `.env` in the project root.
+   - Open the `.env` file and fill in the values marked with `***` (MinIO credentials, bucket name, etc.).
 
 4. Launch the application:
    ```
-   python launch.py
+   docker compose up --build
    ```
+   This will start MongoDB, Redis, MinIO and the worker/scheduler services. You can also run `python launch.py --local` which performs the same action.
 
 ## 🛠️ Configuration
 
 - **RSS feeds can be modified in the `rss_feeds.json` file.**
-- CloudFormation templates are located in `src/infra/cloudformation/`.
-- Lambda function code is in `src/lambda_function/src/`.
+- Environment variables are loaded from the `.env` file created from `local.env.template`.
+- Docker services are defined in `docker-compose.yml`.
+- Lambda function code (used by the local worker) lives in `src/infra/lambdas/RSSFeedProcessorLambda/src/`.
 
 ## 📊 Monitoring
 
-The Lambda function logs are still sent to CloudWatch Logs, however metrics are
+Logs from the worker and scheduler are printed to the console. Metrics are
 exposed using [Prometheus](https://prometheus.io/). When the processor runs it
 starts a tiny HTTP server that serves metrics on `/metrics` (port `8000` by
 default). These metrics can be scraped by a Prometheus server for monitoring.

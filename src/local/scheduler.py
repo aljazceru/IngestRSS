@@ -1,6 +1,10 @@
 import schedule
 import time
-from src.infra.lambdas.RSSQueueFiller.lambda.lambda_function import handler
+import importlib
+
+handler = importlib.import_module(
+    "src.infra.lambdas.RSSQueueFiller.lambda.lambda_function"
+).handler
 
 
 def run_queue_filler():
