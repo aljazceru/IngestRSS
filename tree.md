@@ -17,7 +17,6 @@
 │   │   ├── __pycache__
 │   │   │   └── deploy_infrastructure.cpython-312.pyc
 │   │   ├── cloudformation
-│   │   │   ├── dynamo.yaml
 │   │   │   ├── lambda_role.yaml
 │   │   │   ├── rss_lambda_stack.yaml
 │   │   │   ├── s3.yaml

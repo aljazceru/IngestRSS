@@ -37,7 +37,6 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'sqs:*'
-                  - 'dynamodb:*'
                   - 's3:*'
                   - 'lambda:*'
                   - 'logs:*'

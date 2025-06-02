@@ -1,22 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: SQS Filler Lambda Stack
+Description: Redis Queue Filler Lambda Stack
 
 Parameters:
   QueueFillerLambdaName:
     Type: String
     Description: Name of the Lambda function
-  SqsQueueUrl:
+  RedisUrl:
     Type: String
-    Description: URL of the SQS queue
-  DynamoDbTableName:
+    Description: URL of the Redis instance
+  RedisQueueName:
     Type: String
-    Description: Name of the DynamoDB table
-  DynamoDbTableArn:
-    Type: String
-    Description: ARN of the DynamoDB table
-  SqsQueueArn:
-    Type: String
-    Description: ARN of the SQS queue
+    Description: Name of the Redis queue
   LambdaCodeS3Bucket:
     Type: String
     Description: S3 bucket containing the Lambda function code
@@ -45,8 +39,8 @@ Resources:
       Timeout: !Ref LambdaTimeout
       Environment:
         Variables:
-          SQS_QUEUE_URL: !Ref SqsQueueUrl
-          DYNAMODB_TABLE_NAME: !Ref DynamoDbTableName
+          REDIS_URL: !Ref RedisUrl
+          REDIS_QUEUE_NAME: !Ref RedisQueueName
       Role: !GetAtt SqsFillerFunctionRole.Arn
 
   SqsFillerFunctionRole:
@@ -72,21 +66,13 @@ Resources:
                 Resource: arn:aws:logs:*:*:*
               - Effect: Allow
                 Action:
-                  - dynamodb:Scan
-                Resource: !Ref DynamoDbTableArn
-              - Effect: Allow
-                Action:
-                  - sqs:SendMessage
-                Resource: !Ref SqsQueueArn
-              - Effect: Allow
-                Action:
                   - s3:GetObject
                 Resource: !Sub arn:aws:s3:::${LambdaCodeS3Bucket}/${LambdaCodeS3Key}
 
 Outputs:
   SqsFillerFunctionArn:
-    Description: ARN of the SQS Filler Lambda Function
+    Description: ARN of the Queue Filler Lambda Function
     Value: !GetAtt SqsFillerFunction.Arn
   SqsFillerFunctionRoleArn:
-    Description: ARN of the IAM Role for SQS Filler Lambda Function
+    Description: ARN of the IAM Role for Queue Filler Lambda Function
     Value: !GetAtt SqsFillerFunctionRole.Arn
