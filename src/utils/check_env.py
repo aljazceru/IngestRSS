@@ -9,7 +9,11 @@ def check_env() -> None:
         "AWS_REGION",
         "AWS_ACCOUNT_ID",
         "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY"
+        "AWS_SECRET_ACCESS_KEY",
+        "MINIO_ENDPOINT",
+        "MINIO_ACCESS_KEY",
+        "MINIO_SECRET_KEY",
+        "MINIO_BUCKET"
     ]
 
     # Variables that are derived or have default values

@@ -1,4 +1,5 @@
 import boto3
+from minio import Minio
 import json
 import os
 import logging
@@ -9,10 +10,15 @@ from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
 
 logger = logging.getLogger()
 
-s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
-CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")) 
+minio_client = Minio(
+    os.getenv("MINIO_ENDPOINT"),
+    access_key=os.getenv("MINIO_ACCESS_KEY"),
+    secret_key=os.getenv("MINIO_SECRET_KEY"),
+    secure=False
+)
+CONTENT_BUCKET = os.getenv("MINIO_BUCKET", os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")))
 DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE_NAME")
 storage_strategy = os.environ.get('STORAGE_STRATEGY')
 
@@ -54,8 +60,8 @@ def pinecone_save_article(article:dict):
 def dynamodb_save_article(article:dict):
     pass
 
-def s3_save_article(article:dict):    
-    logger.info("Saving article to S3")
+def s3_save_article(article:dict):
+    logger.info("Saving article to MinIO")
 
     now = datetime.now()
     article_id = article['article_id']
@@ -72,22 +78,22 @@ def s3_save_article(article:dict):
         json.dump(article, f)
 
     try:
-        s3.upload_file(file_path, 
-                       CONTENT_BUCKET, 
-                       file_key,
-                       ExtraArgs={
-                        "Metadata": 
-                            {
-                                "rss": article.get("rss", ""),
-                                "title": article.get("title", ""),
-                                "unixTime": str(article.get("unixTime", "")),
-                                "article_id": article.get("article_id", ""),
-                                "link": article.get("link", ""),
-                                "rss_id": article.get("rss_id", "")
-                            }
-                        }
-                    )
-        logger.info(f"Saved article {article_id} to S3 bucket {CONTENT_BUCKET}")
+        metadata = {
+            "rss": article.get("rss", ""),
+            "title": article.get("title", ""),
+            "unixTime": str(article.get("unixTime", "")),
+            "article_id": article.get("article_id", ""),
+            "link": article.get("link", ""),
+            "rss_id": article.get("rss_id", "")
+        }
+        minio_client.fput_object(
+            CONTENT_BUCKET,
+            file_key,
+            file_path,
+            content_type="application/json",
+            metadata=metadata
+        )
+        logger.info(f"Saved article {article_id} to bucket {CONTENT_BUCKET}")
         
     except Exception as e:
         logger.error(f"Failed to save article with error: {str(e)}. \n Article: {article} \n Article Type: {type(article)}")
