@@ -4,9 +4,9 @@ from dateutil import parser
 import queue
 import threading
 import logging
-from utils import generate_key
-from article_extractor import extract_article
-from article_cleaning import clean_text
+from .utils import generate_key
+from .article_extractor import extract_article
+from .article_cleaning import clean_text
 
 logger = logging.getLogger()
 
@@ -38,6 +38,7 @@ def extract_feed_threading(rss: dict, output_queue, stop_thread):
     feed_url = rss['u']
     last_date = rss['dt']
     max_date = last_date
+    entry = None  # Initialize entry variable
 
     try:
         feed = feedparser.parse(feed_url)
@@ -45,11 +46,11 @@ def extract_feed_threading(rss: dict, output_queue, stop_thread):
             if stop_thread.is_set():
                 break
             
-            pub_date = parse_pub_date(entry['published'])
+            pub_date = parse_pub_date(entry.get('published', ''))
             
             if pub_date > last_date:
                 title, text = extract_article(entry.link)
-                title, text = clean_text(title), clean_text(text)
+                title, text = clean_text(title or ''), clean_text(text or '')
                 article = {
                     'link': entry.link,
                     'rss': feed_url,
@@ -71,7 +72,9 @@ def extract_feed_threading(rss: dict, output_queue, stop_thread):
         }
         output_queue.put(output)
     except Exception as e:
-        logger.error(f"Feed: {entry}")
+        logger.error(f"Feed URL: {feed_url}")
+        if entry:
+            logger.error(f"Current entry: {entry.get('link', 'unknown')}")
         logger.error(f"Feed failed due to error: {e}")
 
 def extract_feed(rss: dict):
@@ -83,7 +86,7 @@ def extract_feed(rss: dict):
     try:
         feed = feedparser.parse(feed_url)
         for entry in feed['entries']:
-            pub_date = parse_pub_date(entry['published'])
+            pub_date = parse_pub_date(entry.get('published', ''))
             
             if pub_date > last_date:
                 title, text = extract_article(entry.link) 
@@ -106,26 +109,25 @@ def extract_feed(rss: dict):
             'max_date': max_date,
             'feed': rss
         }
-        print(output)
         return output
     except Exception as e:
-        logger.error(f"Feed: {entry}")
+        logger.error(f"Feed URL: {feed_url}")
         logger.error(f"Feed failed due to error: {e}")
 
-def parse_pub_date(entry:dict):
-
-    if 'published' in entry:
-        date_string = entry['published']       
-
+def parse_pub_date(date_string: str) -> int:
+    """Parse publication date from various formats"""
+    if not date_string:
+        return int(datetime.now().timestamp())
+        
+    try:
+        return int(datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %z").timestamp())
+    except ValueError:
         try:
-            return int(datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %z").timestamp())
+            return int(datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ").timestamp())
         except ValueError:
             try:
-                return int(datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ").timestamp())
-            except ValueError:
-                try:
-                    return int(parser.parse(date_string).timestamp())
-                except ValueError:
-                    pass
+                return int(parser.parse(date_string).timestamp())
+            except (ValueError, TypeError):
+                pass
 
     return int(datetime.now().timestamp()) # Return current time if no date is found

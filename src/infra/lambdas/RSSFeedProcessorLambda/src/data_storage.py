@@ -6,9 +6,15 @@ import logging
 from datetime import datetime
 from pymongo import MongoClient
 
-from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
-
 logger = logging.getLogger()
+
+# Try to import vector DB components, but make them optional
+try:
+    from .analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
+    VECTOR_DB_AVAILABLE = True
+except ImportError:
+    VECTOR_DB_AVAILABLE = False
+    logger.warning("Vector DB components not available. Qdrant storage will not work.")
 
 s3 = boto3.client('s3')
 
@@ -36,9 +42,14 @@ def save_article(article: dict, strategy: str):
     if strategy == "s3":
         s3_save_article(article)
     elif strategy == "qdrant":
-        qdrant_save_article(article)
+        if VECTOR_DB_AVAILABLE:
+            qdrant_save_article(article)
+        else:
+            logger.error("Qdrant storage requested but vector DB components not available")
+            raise ValueError("Vector DB components not available for Qdrant storage")
     elif strategy == "both":
-        qdrant_save_article(article)
+        if VECTOR_DB_AVAILABLE:
+            qdrant_save_article(article)
         s3_save_article(article)
     else:
         raise ValueError(f"Invalid storage strategy: {strategy}")
@@ -62,7 +73,7 @@ def s3_save_article(article:dict):
 
     now = datetime.now()
     article_id = article['article_id']
-    logger.info(f"Content ")
+    
     if not article_id:
         logger.error(f"Missing rss_id or article_id in article: {article}")
         return

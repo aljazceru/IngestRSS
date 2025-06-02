@@ -3,7 +3,13 @@ import requests
 
 from qdrant_client import QdrantClient, models
 
-from utils import setup_logging
+try:
+    from ...utils import setup_logging
+except ImportError:
+    # Fallback for when running standalone
+    import logging
+    def setup_logging():
+        return logging.getLogger(__name__)
 
 logger = setup_logging()
 
@@ -26,13 +32,19 @@ def get_index():
     return client
 
 def vectorize(article: str) -> list[float]:
-    response = requests.post(
-        f"{ollama_host}/api/embeddings",
-        json={"model": ollama_embedding_model, "prompt": article},
-        timeout=30,
-    )
-    response.raise_for_status()
-    return response.json().get("embedding", [])
+    try:
+        response = requests.post(
+            f"{ollama_host}/api/embeddings",
+            json={"model": ollama_embedding_model, "prompt": article},
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.json().get("embedding", [])
+    except requests.RequestException as e:
+        logger.error(f"Error generating embedding: {e}")
+        # Return a zero vector of the expected dimension as fallback
+        dim = int(embedding_dim) if embedding_dim else 384  # Default dimension
+        return [0.0] * dim
 
 
 def upsert_vectors(index: QdrantClient, data: list[dict]):
@@ -44,7 +56,7 @@ def upsert_vectors(index: QdrantClient, data: list[dict]):
 
 
 def query_vectors(index: QdrantClient, vector: list[float], top_k: int, filter_query: dict | None = None):
-    if len(vector) != int(embedding_dim):
+    if embedding_dim and len(vector) != int(embedding_dim):
         raise ValueError("Length of vector does not match the embedding dimension")
     return index.search(
         collection_name=collection_name,

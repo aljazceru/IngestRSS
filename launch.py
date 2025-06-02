@@ -6,17 +6,13 @@ import boto3
 from dotenv import load_dotenv
 import logging
 import argparse
-import subprocess
-from src.infra.lambdas.RSSQueueFiller.deploy_sqs_filler_lambda import deploy_sqs_filler
-
-from src.utils.check_env import check_env
 
 
 def check_local_env() -> None:
     """Ensure required environment variables for local mode are set."""
     required_vars = [
         "MONGODB_URL",
-        "MONGODB_DB_NAME",
+        "MONGODB_DB_NAME", 
         "MONGODB_COLLECTION_NAME",
         "REDIS_URL",
         "REDIS_QUEUE_NAME",
@@ -45,7 +41,7 @@ def start_docker_containers() -> None:
         raise
 
 
-print("🗞️  💵 ⚖️  IngestRSS⚖️  💵 🗞️".center(100, "-"))
+print("RSS Feed Processor".center(100, "-"))
 
 parser = argparse.ArgumentParser(description="Launch IngestRSS")
 parser.add_argument(
@@ -59,7 +55,41 @@ load_dotenv(override=True)
 
 if args.local:
     check_local_env()
+    # Upload RSS feeds to MongoDB for local deployment
+    from src.feed_management.upload_rss_feeds import upload_rss_feeds
+    
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    rss_feeds_file = os.path.join(current_dir, "rss_feeds.json")
+    
+    if os.path.exists(rss_feeds_file):
+        with open(rss_feeds_file, 'r') as f:
+            rss_feeds = json.load(f)
+        upload_rss_feeds(
+            rss_feeds,
+            os.getenv('MONGODB_URL'),
+            os.getenv('MONGODB_DB_NAME'),
+            os.getenv('MONGODB_COLLECTION_NAME', 'rss_feeds')
+        )
+        print("RSS feeds uploaded to MongoDB")
+    
+    start_docker_containers()
+    print("Local RSS Feed Processor started successfully!")
+    print("Services running:")
+    print("- MongoDB: localhost:27017")
+    print("- Redis: localhost:6379") 
+    print("- MinIO: localhost:9000 (console: localhost:9001)")
+    print("- Worker and Scheduler containers are processing feeds")
+    sys.exit(0)
+
 else:
+    # Only import AWS modules for cloud deployment
+    from src.utils.check_env import check_env
+    from src.infra.deploy_infrastructure import deploy_infrastructure
+    from src.infra.lambdas.RSSFeedProcessorLambda.deploy_rss_feed_lambda import deploy_lambda
+    from src.infra.lambdas.lambda_utils.update_lambda_env_vars import update_env_vars
+    from src.feed_management.upload_rss_feeds import upload_rss_feeds
+    from src.infra.lambdas.RSSQueueFiller.deploy_sqs_filler_lambda import deploy_sqs_filler
+    
     check_env()
 
 # Set up logging
@@ -71,16 +101,10 @@ lambda_client = boto3.client("lambda")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-from src.infra.deploy_infrastructure import deploy_infrastructure
-from src.infra.lambdas.RSSFeedProcessorLambda.deploy_rss_feed_lambda import deploy_lambda
-from src.infra.lambdas.lambda_utils.update_lambda_env_vars import update_env_vars
-from src.feed_management.upload_rss_feeds import upload_rss_feeds
-
-def main():
-    if "--local" in sys.argv:
-        subprocess.run(["docker", "compose", "up", "-d"], check=False)
-        return
-
+def main(local_mode=False):
+    if local_mode:
+        return  # Already handled above
+        
     # Deploy infrastructure
     deploy_infrastructure()
     logging.info("Finished Deploying Infrastructure")
