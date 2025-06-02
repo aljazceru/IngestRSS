@@ -9,7 +9,11 @@ def check_env() -> None:
         "AWS_REGION",
         "AWS_ACCOUNT_ID",
         "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY"
+        "AWS_SECRET_ACCESS_KEY",
+        "MINIO_ENDPOINT",
+        "MINIO_ACCESS_KEY",
+        "MINIO_SECRET_KEY",
+        "MINIO_BUCKET"
     ]
 
     # Variables that are derived or have default values
@@ -20,20 +24,20 @@ def check_env() -> None:
         "LAMBDA_EXECUTION_ROLE_NAME",
         "LAMBDA_ROLE_ARN",
         "S3_BUCKET_NAME",
-        "DYNAMODB_TABLE_NAME",
-        "SQS_QUEUE_NAME",
+        "REDIS_URL",
+        "REDIS_QUEUE_NAME",
         "LAMBDA_LAYER_VERSION",
         "LAMBDA_LAYER_NAME",
         "LAMBDA_LAYER_ARN",
         "S3_LAYER_BUCKET_NAME",
         "S3_LAYER_KEY_NAME",
-        "SQS_QUEUE_URL",
-        "SQS_QUEUE_ARN",
-        "DYNAMODB_TABLE_ARN",
         "PYTHON_VERSION",
         "LAMBDA_RUNTIME",
         "LAMBDA_TIMEOUT",
         "LAMBDA_MEMORY",
+        "MONGODB_URL",
+        "MONGODB_DB_NAME",
+        "MONGODB_COLLECTION_NAME",
         "QUEUE_FILLER_LAMBDA_NAME",
         "QUEUE_FILLER_LAMBDA_S3_KEY",
         "LOG_LEVEL",

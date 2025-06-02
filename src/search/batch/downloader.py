@@ -1,4 +1,4 @@
-import boto3
+from minio import Minio
 import pandas as pd
 from typing import Optional, List, Dict, Union, Any
 import json
@@ -10,7 +10,7 @@ from string import Template
 from tqdm import tqdm
 
 class S3BatchDownloader:
-    """Class for batch downloading RSS articles from S3"""
+    """Class for batch downloading RSS articles from a MinIO bucket"""
     
     DEFAULT_CONFIG = {
         "region": "${AWS_REGION}",
@@ -30,8 +30,15 @@ class S3BatchDownloader:
         self.config = self._load_config(config_path)
         self._validate_config()
         
-        self.s3 = boto3.client('s3', region_name=self.config['region'])
-        self.logger.info(f"Initialized S3BatchDownloader for bucket: {self.config['bucket']}")
+        self.s3 = Minio(
+            os.getenv('MINIO_ENDPOINT'),
+            access_key=os.getenv('MINIO_ACCESS_KEY'),
+            secret_key=os.getenv('MINIO_SECRET_KEY'),
+            secure=False
+        )
+        self.logger.info(
+            f"Initialized S3BatchDownloader for bucket: {self.config['bucket']}"
+        )
     
     def _load_config(self, config_path: Optional[str]) -> Dict[str, Any]:
         """Load and process configuration"""
@@ -43,7 +50,7 @@ class S3BatchDownloader:
             
         env_vars = {
             'AWS_REGION': os.getenv('AWS_REGION', 'us-east-1'),
-            'RSS_BUCKET_NAME': os.getenv('S3_BUCKET_NAME')
+            'RSS_BUCKET_NAME': os.getenv('MINIO_BUCKET')
         }
         
         config_str = template.safe_substitute(env_vars)
@@ -68,7 +75,7 @@ class S3BatchDownloader:
                         start_date: Optional[str] = None,
                         end_date: Optional[str] = None) -> str:
         """
-        Download articles from S3 to a consolidated file
+        Download articles from MinIO to a consolidated file
         
         Args:
             output_path: Path to save the output file.
@@ -112,25 +119,31 @@ class S3BatchDownloader:
         return output_path
 
     def _list_objects(self) -> List[Dict]:
-        """List objects in S3 bucket"""
+        """List objects in bucket"""
         objects = []
-        paginator = self.s3.get_paginator('list_objects')
         try:
-            for page in paginator.paginate(Bucket=self.config['bucket']):
-                if 'Contents' in page:
-                    objects.extend(page['Contents'])
+            for obj in self.s3.list_objects(
+                self.config['bucket'],
+                prefix=self.config['prefix'],
+                recursive=True
+            ):
+                objects.append({
+                    'Key': obj.object_name,
+                    'LastModified': obj.last_modified
+                })
             return objects
         except Exception as e:
             self.logger.error(f"Error listing objects: {str(e)}")
             raise
     
     def _download_object(self, obj: Dict) -> Optional[Union[Dict, List[Dict]]]:
-        """Download and parse single S3 object"""
+        """Download and parse single object"""
         try:
-            response = self.s3.get_object(Bucket=self.config['bucket'], Key=obj['Key'])
-            content = response['Body'].read().decode('utf-8')
+            response = self.s3.get_object(self.config['bucket'], obj['Key'])
+            content = response.read().decode('utf-8')
             data = json.loads(content)
-            metadata = response.get('Metadata', {})
+            stat = self.s3.stat_object(self.config['bucket'], obj['Key'])
+            metadata = stat.metadata
             if isinstance(data, dict):
                 data.update(metadata)
                 return [data]

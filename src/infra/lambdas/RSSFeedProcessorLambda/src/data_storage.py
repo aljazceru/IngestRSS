@@ -1,20 +1,35 @@
 import boto3
+from minio import Minio
 import json
 import os
 import logging
-from random import randint
 from datetime import datetime
+from pymongo import MongoClient
 
 from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
 
 logger = logging.getLogger()
 
 s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
 
-CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")) 
+CONTENT_BUCKET = os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET"))
+
+minio_client = Minio(
+    os.getenv("MINIO_ENDPOINT"),
+    access_key=os.getenv("MINIO_ACCESS_KEY"),
+    secret_key=os.getenv("MINIO_SECRET_KEY"),
+    secure=False
+)
+CONTENT_BUCKET = os.getenv("MINIO_BUCKET", os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")))
 DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE_NAME")
 storage_strategy = os.environ.get('STORAGE_STRATEGY')
+
+MONGODB_URL = os.getenv("MONGODB_URL")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME")
+MONGODB_COLLECTION_NAME = os.getenv("MONGODB_COLLECTION_NAME", "rss_feeds")
+
+mongo_client = MongoClient(MONGODB_URL)
+feeds_collection = mongo_client[MONGODB_DB_NAME][MONGODB_COLLECTION_NAME]
 
 ##### Article Storage #####
 def save_article(article:dict, strategy:str):
@@ -51,11 +66,9 @@ def pinecone_save_article(article:dict):
     logger.info("Upserting article to Pinecone")
     upsert_vectors(index, data, namespace) 
 
-def dynamodb_save_article(article:dict):
-    pass
 
-def s3_save_article(article:dict):    
-    logger.info("Saving article to S3")
+def s3_save_article(article:dict):
+    logger.info("Saving article to MinIO")
 
     now = datetime.now()
     article_id = article['article_id']
@@ -72,36 +85,42 @@ def s3_save_article(article:dict):
         json.dump(article, f)
 
     try:
-        s3.upload_file(file_path, 
-                       CONTENT_BUCKET, 
-                       file_key,
-                       ExtraArgs={
-                        "Metadata": 
-                            {
-                                "rss": article.get("rss", ""),
-                                "title": article.get("title", ""),
-                                "unixTime": str(article.get("unixTime", "")),
-                                "article_id": article.get("article_id", ""),
-                                "link": article.get("link", ""),
-                                "rss_id": article.get("rss_id", "")
-                            }
-                        }
-                    )
-        logger.info(f"Saved article {article_id} to S3 bucket {CONTENT_BUCKET}")
+        metadata = {
+            "rss": article.get("rss", ""),
+            "title": article.get("title", ""),
+            "unixTime": str(article.get("unixTime", "")),
+            "article_id": article.get("article_id", ""),
+            "link": article.get("link", ""),
+            "rss_id": article.get("rss_id", "")
+        }
+        minio_client.fput_object(
+            CONTENT_BUCKET,
+            file_key,
+            file_path,
+            content_type="application/json",
+            metadata=metadata
+        )
+        logger.info(f"Saved article {article_id} to bucket {CONTENT_BUCKET}")
         
     except Exception as e:
         logger.error(f"Failed to save article with error: {str(e)}. \n Article: {article} \n Article Type: {type(article)}")
 
 
 ###### Feed Storage ######
-def update_rss_feed(feed:dict, last_pub_dt:int):
+RSS_FEEDS_FILE = os.getenv("RSS_FEEDS_FILE", "rss_feeds.json")
+
+
+def update_rss_feed(feed: dict, last_pub_dt: int):
     try:
-        table = dynamodb.Table(DYNAMODB_TABLE)
-        table.update_item(
-            Key={'url': feed['u']},
-            UpdateExpression='SET dt = :val',
-            ExpressionAttributeValues={':val': last_pub_dt}
-        )
-        logger.info(f"Updated RSS feed in DynamoDB: {feed['u']} with dt: {feed['dt']}")
+        if not os.path.exists(RSS_FEEDS_FILE):
+            return
+        with open(RSS_FEEDS_FILE, "r") as f:
+            feeds = json.load(f)
+        for item in feeds:
+            if item.get("u") == feed["u"]:
+                item["dt"] = int(last_pub_dt)
+        with open(RSS_FEEDS_FILE, "w") as f:
+            json.dump(feeds, f)
+        logger.info(f"Updated RSS feed {feed['u']} with dt: {last_pub_dt}")
     except Exception as e:
         logger.error(f"Failed to update RSS feed: {str(e)}")
