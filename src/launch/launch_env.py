@@ -90,13 +90,13 @@ def main():
     env_vars["TEST"] = get_env_value("TEST", "Enter Test Value:", options=["0", "1"], advanced=advanced_mode)
     
     # Storage Strategy
-    env_vars["STORAGE_STRATEGY"] = get_env_value("STORAGE_STRATEGY", "Choose Storage Strategy:", options=["s3", "pinecone"], advanced=advanced_mode)
-    
-    # Pinecone Configuration (only if pinecone is selected)
-    if env_vars["STORAGE_STRATEGY"] == "pinecone":
-        env_vars["PINECONE_API_KEY"] = get_env_value("PINECONE_API_KEY", "Enter Pinecone API Key:", advanced=advanced_mode)
-        env_vars["PINECONE_DB_NAME"] = get_env_value("PINECONE_DB_NAME", "Enter Pinecone DB Name:", options=["open-rss-articles", "custom-rss-db"], advanced=advanced_mode)
-    
+    env_vars["STORAGE_STRATEGY"] = get_env_value("STORAGE_STRATEGY", "Choose Storage Strategy:", options=["s3", "qdrant"], advanced=advanced_mode)
+
+    # Qdrant Configuration (only if qdrant is selected)
+    if env_vars["STORAGE_STRATEGY"] == "qdrant":
+        env_vars["QDRANT_URL"] = get_env_value("QDRANT_URL", "Enter Qdrant URL:", options=["http://localhost:6333"], advanced=advanced_mode)
+        env_vars["QDRANT_COLLECTION_NAME"] = get_env_value("QDRANT_COLLECTION_NAME", "Enter Qdrant Collection Name:", options=["open-rss-articles"], advanced=advanced_mode)
+
     # Display summary
     display_summary(env_vars)
     

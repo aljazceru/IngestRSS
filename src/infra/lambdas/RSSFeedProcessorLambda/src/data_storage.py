@@ -32,39 +32,29 @@ mongo_client = MongoClient(MONGODB_URL)
 feeds_collection = mongo_client[MONGODB_DB_NAME][MONGODB_COLLECTION_NAME]
 
 ##### Article Storage #####
-def save_article(article:dict, strategy:str):
+def save_article(article: dict, strategy: str):
     if strategy == "s3":
         s3_save_article(article)
-    elif strategy == "pinecone":
-        pinecone_save_article(article)
-    elif strategy == 'both':
-        pinecone_save_article(article)
+    elif strategy == "qdrant":
+        qdrant_save_article(article)
+    elif strategy == "both":
+        qdrant_save_article(article)
         s3_save_article(article)
     else:
         raise ValueError(f"Invalid storage strategy: {strategy}")
     
 
-def pinecone_save_article(article:dict):
-    logger.info("Saving article to Pinecone")
+def qdrant_save_article(article: dict):
+    logger.info("Saving article to Qdrant")
     index = get_index()
 
-    # Expected Keys from Pinecone *MUST* include 'id' and 'values'
-    data = dict()
-    logging.info(f"Article ID into Pinecone")
-    data["id"] = article["article_id"]
-    logging.info(f"Article content into Pinecone")
-    data["values"] = vectorize(article=article["content"])
-    
-    print(type(data["values"]))
-    print(data["id"])
-    
-    data = [data]
-    
-    
-    namespace = os.getenv('PINECONE_NAMESPACE')
-    
-    logger.info("Upserting article to Pinecone")
-    upsert_vectors(index, data, namespace) 
+    data = {
+        "id": article["article_id"],
+        "vector": vectorize(article["content"]),
+        "payload": {"rss": article.get("rss"), "title": article.get("title")},
+    }
+
+    upsert_vectors(index, [data])
 
 
 def s3_save_article(article:dict):

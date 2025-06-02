@@ -48,13 +48,14 @@ def check_env() -> None:
 
     # Variables that are optional depending on the storage strategy
     optional_vars = {
-        "PINECONE_API_KEY": "pinecone",
-        "PINECONE_DB_NAME": "pinecone",
-        "OPENAI_API_KEY": "all",
-        "PINECONE_SHARDS": "pinecone",
-        "VECTOR_EMBEDDING_MODEL": "pinecone",
-        "VECTOR_EMBEDDING_DIM": "pinecone",
-        "VECTOR_SEARCH_METRIC": "pinecone"
+        "QDRANT_URL": "qdrant",
+        "QDRANT_API_KEY": "qdrant",
+        "QDRANT_COLLECTION_NAME": "qdrant",
+        "OLLAMA_HOST": "all",
+        "OLLAMA_EMBEDDING_MODEL": "all",
+        "VECTOR_EMBEDDING_MODEL": "qdrant",
+        "VECTOR_EMBEDDING_DIM": "qdrant",
+        "VECTOR_SEARCH_METRIC": "qdrant"
     }
 
     missing_vars: List[str] = []

@@ -4,8 +4,7 @@ import sys
 import json
 from src.utils.retry_logic import retry_with_backoff
 from botocore.exceptions import ClientError
-from pinecone import Pinecone
-from pinecone import ServerlessSpec
+from qdrant_client import QdrantClient, models
 
 
 
@@ -180,21 +179,17 @@ def deploy_infrastructure():
                               }
                           ])
     
-    if os.getenv("STORAGE_STRATEGY") == 'pinecone':
-        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-        index_name = os.getenv("PINECONE_DB_NAME")
-        embedding_dim = os.getenv("VECTOR_EMBEDDING_DIM")
-        vector_search_metric = os.getenv("VECTOR_SEARCH_METRIC")
-        
-        if index_name not in pc.list_indexes().names():
-            pc.create_index(
-                name=index_name,
-                dimension=int(embedding_dim),
-                metric=vector_search_metric,
-                spec = ServerlessSpec(
-                    cloud="aws",
-                    region="us-east-1",
-                ),
+    if os.getenv("STORAGE_STRATEGY") == 'qdrant':
+        client = QdrantClient(url=os.getenv("QDRANT_URL"), api_key=os.getenv("QDRANT_API_KEY"))
+        collection = os.getenv("QDRANT_COLLECTION_NAME")
+        embedding_dim = int(os.getenv("VECTOR_EMBEDDING_DIM"))
+        metric = os.getenv("VECTOR_SEARCH_METRIC", "cosine").upper()
+
+        existing = [c.name for c in client.get_collections().collections]
+        if collection not in existing:
+            client.create_collection(
+                collection_name=collection,
+                vectors_config=models.VectorParams(size=embedding_dim, distance=getattr(models.Distance, metric))
             )
         
 

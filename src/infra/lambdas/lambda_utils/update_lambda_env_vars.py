@@ -48,20 +48,19 @@ def update_env_vars(function_name):
         # Storage Configuration
         'STORAGE_STRATEGY': os.environ.get('STORAGE_STRATEGY', 's3'),  # Default to s3 storage
         
-        # Pinecone Configuration (only used if STORAGE_STRATEGY is 'pinecone')
-        'PINECONE_API_KEY': os.environ.get('PINECONE_API_KEY'),
-        'PINECONE_DB_NAME': os.environ.get('PINECONE_DB_NAME'),
-        'PINECONE_SHARDS': os.environ.get('PINECONE_SHARDS'),
-        'PINECONE_NAMESPACE': os.environ.get('PINECONE_NAMESPACE'),
+        # Qdrant Configuration (only used if STORAGE_STRATEGY is 'qdrant')
+        'QDRANT_URL': os.environ.get('QDRANT_URL'),
+        'QDRANT_API_KEY': os.environ.get('QDRANT_API_KEY'),
+        'QDRANT_COLLECTION_NAME': os.environ.get('QDRANT_COLLECTION_NAME'),
         
         # Vector Configuration
         'VECTOR_EMBEDDING_MODEL': os.environ.get('VECTOR_EMBEDDING_MODEL'),
         'VECTOR_EMBEDDING_DIM': os.environ.get('VECTOR_EMBEDDING_DIM'),
         'VECTOR_SEARCH_METRIC': os.environ.get('VECTOR_SEARCH_METRIC'),
         
-        # OpenAI Configuration
-        'OPENAI_API_KEY': os.environ.get('OPENAI_API_KEY'),
-        "OPENAI_EMBEDDING_MODEL": os.environ.get('OPENAI_EMBEDDING_MODEL'),
+        # Ollama Configuration
+        'OLLAMA_HOST': os.environ.get('OLLAMA_HOST'),
+        'OLLAMA_EMBEDDING_MODEL': os.environ.get('OLLAMA_EMBEDDING_MODEL'),
     }
     
     return lambda_client.update_function_configuration(
