@@ -71,7 +71,7 @@ lambda_client = boto3.client("lambda")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-from src.infra.import deploy_infrastructure
+from src.infra.deploy_infrastructure import deploy_infrastructure
 from src.infra.lambdas.RSSFeedProcessorLambda.deploy_rss_feed_lambda import deploy_lambda
 from src.infra.lambdas.lambda_utils.update_lambda_env_vars import update_env_vars
 from src.feed_management.upload_rss_feeds import upload_rss_feeds
