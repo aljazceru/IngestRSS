@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import subprocess
 import boto3
 from dotenv import load_dotenv
 import logging
@@ -28,8 +29,12 @@ from src.infra.lambdas.lambda_utils.update_lambda_env_vars import update_env_var
 from src.feed_management.upload_rss_feeds import upload_rss_feeds
 
 def main():
+    if "--local" in sys.argv:
+        subprocess.run(["docker", "compose", "up", "-d"], check=False)
+        return
+
     # Deploy infrastructure
-    deploy_infrastructure() 
+    deploy_infrastructure()
     logging.info("Finished Deploying Infrastructure")
    
     # Deploy Lambda function
