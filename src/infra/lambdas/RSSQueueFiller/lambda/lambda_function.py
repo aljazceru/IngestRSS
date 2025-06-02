@@ -1,38 +1,57 @@
 import json
 import os
 import logging
+from pymongo import MongoClient
 from datetime import datetime
 import redis
 
 logger = logging.getLogger()
 logger.setLevel("INFO")
 
-REDIS_URL = os.environ["REDIS_URL"]
-REDIS_QUEUE_NAME = os.environ.get("REDIS_QUEUE_NAME", "rss-feed-queue")
-RSS_FEEDS_FILE = os.environ.get("RSS_FEEDS_FILE", "rss_feeds.json")
+sqs = boto3.client('sqs')
 
-redis_client = redis.Redis.from_url(REDIS_URL)
+SQS_QUEUE_URL = os.environ['SQS_QUEUE_URL']
+MONGODB_URL = os.environ['MONGODB_URL']
+MONGODB_DB_NAME = os.environ['MONGODB_DB_NAME']
+MONGODB_COLLECTION_NAME = os.environ.get('MONGODB_COLLECTION_NAME', 'rss_feeds')
+
+mongo_client = MongoClient(MONGODB_URL)
+feeds_collection = mongo_client[MONGODB_DB_NAME][MONGODB_COLLECTION_NAME]
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return int(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 def handler(event, context):
     messages_sent = 0
-    try:
-        with open(RSS_FEEDS_FILE, "r") as f:
-            feeds = json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to load RSS feed file: {e}")
-        return {"statusCode": 500, "body": "Failed to load feeds"}
 
-    for feed in feeds:
-        message = {"u": feed.get("u"), "dt": feed.get("dt")}
-        try:
-            redis_client.lpush(REDIS_QUEUE_NAME, json.dumps(message))
-            messages_sent += 1
-        except Exception as e:
-            logger.error(f"Error pushing message to Redis: {e}")
+    # Iterate over all feeds in MongoDB
+    for item in feeds_collection.find({}):
+        rss_url = item.get('url')
+        rss_dt = item.get('dt')
 
-    logger.info(
-        f"Sent {messages_sent} messages to Redis at {datetime.now().isoformat()}"
-    )
+        logger.debug(f"Processing RSS feed: {rss_url}")
+        logger.debug(f"Last published date: {rss_dt}")
+        
+        if rss_url:
+            message = {
+                'u': rss_url,
+                'dt': rss_dt
+            }
+            logger.debug("message", message)
+            try:
+                sqs.send_message(
+                    QueueUrl=SQS_QUEUE_URL,
+                    MessageBody=json.dumps(message, cls=DecimalEncoder)
+                )
+                messages_sent += 1
+            except Exception as e:
+                logger.error(f"Error sending message to SQS: {str(e)}")
+
+    logger.info(f"Sent {messages_sent} messages to SQS at {datetime.now().isoformat()}")
+
     return {
         "statusCode": 200,
         "body": json.dumps(f"Sent {messages_sent} RSS URLs to Redis"),

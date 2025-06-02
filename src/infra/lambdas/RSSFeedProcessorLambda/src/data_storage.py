@@ -4,6 +4,7 @@ import json
 import os
 import logging
 from datetime import datetime
+from pymongo import MongoClient
 
 from analytics.embeddings.vector_db import get_index, upsert_vectors, vectorize
 
@@ -22,6 +23,13 @@ minio_client = Minio(
 CONTENT_BUCKET = os.getenv("MINIO_BUCKET", os.getenv("S3_BUCKET_NAME", os.getenv("CONTENT_BUCKET")))
 DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE_NAME")
 storage_strategy = os.environ.get('STORAGE_STRATEGY')
+
+MONGODB_URL = os.getenv("MONGODB_URL")
+MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME")
+MONGODB_COLLECTION_NAME = os.getenv("MONGODB_COLLECTION_NAME", "rss_feeds")
+
+mongo_client = MongoClient(MONGODB_URL)
+feeds_collection = mongo_client[MONGODB_DB_NAME][MONGODB_COLLECTION_NAME]
 
 ##### Article Storage #####
 def save_article(article:dict, strategy:str):
