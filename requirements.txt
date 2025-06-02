@@ -3,9 +3,9 @@ pymongo==4.*
 python-dotenv==1.0.*
 requests==2.32.*
 constructs==10.2.69
-# Optional, yet necessary for the Pinecone SDK functionality.
-pinecone
-openai
+# Vector database and embedding libraries
+qdrant-client
+ollama
 tqdm
 prometheus-clien
 redis
