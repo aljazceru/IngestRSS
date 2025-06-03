@@ -1,0 +1,4 @@
+newspaper3k
+feedparser
+python-dateutil
+lxml
