@@ -6,40 +6,17 @@ from typing import List, Dict
 def check_env() -> None:
     # Variables that must be set by the user
     required_user_vars = [
-        "AWS_REGION",
-        "AWS_ACCOUNT_ID",
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "MINIO_ENDPOINT",
-        "MINIO_ACCESS_KEY",
-        "MINIO_SECRET_KEY",
-        "MINIO_BUCKET"
+        "MONGODB_URL",
+        "MONGODB_ARTICLES_DB_NAME",
+        "MONGODB_ARTICLES_COLLECTION_NAME",
+        "MONGODB_FEEDS_DB_NAME",
+        "MONGODB_FEEDS_COLLECTION_NAME",
+        "REDIS_URL",
+        "REDIS_QUEUE_NAME"
     ]
 
     # Variables that are derived or have default values
     derived_vars = [
-        "AWS_DEFAULT_REGION",
-        "LAMBDA_FUNCTION_NAME",
-        "STACK_BASE",
-        "LAMBDA_EXECUTION_ROLE_NAME",
-        "LAMBDA_ROLE_ARN",
-        "S3_BUCKET_NAME",
-        "REDIS_URL",
-        "REDIS_QUEUE_NAME",
-        "LAMBDA_LAYER_VERSION",
-        "LAMBDA_LAYER_NAME",
-        "LAMBDA_LAYER_ARN",
-        "S3_LAYER_BUCKET_NAME",
-        "S3_LAYER_KEY_NAME",
-        "PYTHON_VERSION",
-        "LAMBDA_RUNTIME",
-        "LAMBDA_TIMEOUT",
-        "LAMBDA_MEMORY",
-        "MONGODB_URL",
-        "MONGODB_DB_NAME",
-        "MONGODB_COLLECTION_NAME",
-        "QUEUE_FILLER_LAMBDA_NAME",
-        "QUEUE_FILLER_LAMBDA_S3_KEY",
         "LOG_LEVEL",
         "APP_NAME",
         "VERSION",

@@ -4,8 +4,8 @@ import logging
 import importlib
 
 handler = importlib.import_module(
-    'src.infra.lambdas.RSSQueueFiller.lambda.lambda_function'
-).handler
+    'src.feed_management.scheduler_main'
+).scheduler_main
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ def main():
     logger.info("Starting scheduler loop")
     while True:
         try:
-            handler({}, None)
+            handler()
         except Exception as exc:
             logger.exception("Scheduler job failed: %s", exc)
         time.sleep(INTERVAL_MINUTES * 60)

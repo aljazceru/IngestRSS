@@ -33,53 +33,15 @@ def main():
     
     # Determine if we're in advanced mode
     advanced_mode = not Confirm.ask("Do you want to use basic mode? \n( We recommend basic for your first time ) ")
-    
-    # AWS Configuration
-    
-    
-    env_vars["AWS_ACCOUNT_ID"] = get_env_value("AWS_ACCOUNT_ID", "Enter AWS Account ID:") # Could we grab this for the user instead.
-    
-    # AWS Credentials
-    if not check_aws_region():
-        console.print("AWS region not found in environment variables.")
-        env_vars["AWS_REGION"] = get_env_value("AWS_REGION", "Enter AWS Region:", options=get_aws_regions())
-    else:
-        env_vars["AWS_REGION"] = os.environ.get('AWS_REGION')
 
-    if not check_aws_credentials():
-        console.print("AWS credentials not found in environment variables.")
-        if Confirm.ask("Do you want to set AWS credentials?"):
-            env_vars["AWS_ACCESS_KEY_ID"] = get_env_value("AWS_ACCESS_KEY_ID", "Enter AWS Access Key ID:")
-            env_vars["AWS_SECRET_ACCESS_KEY"] = get_env_value("AWS_SECRET_ACCESS_KEY", "Enter AWS Secret Access Key:")
-    else:
-        env_vars["AWS_ACCESS_KEY_ID"] = os.environ.get('AWS_ACCESS_KEY_ID')
-        env_vars["AWS_SECRET_ACCESS_KEY"] = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        console.print("AWS credentials found in environment variables.")
-    
-    # Resource Names
-    env_vars["LAMBDA_FUNCTION_NAME"] = get_env_value("LAMBDA_FUNCTION_NAME", "Enter Lambda Function Name:", options=["RSSFeedProcessor", "CustomRSSProcessor"], advanced=advanced_mode)
-    env_vars["STACK_BASE"] = env_vars["LAMBDA_FUNCTION_NAME"]
-    env_vars["LAMBDA_EXECUTION_ROLE_NAME"] = f"rss-feed-processor-role-{env_vars['AWS_REGION']}"
-    env_vars["LAMBDA_ROLE_ARN"] = f"arn:aws:iam::{env_vars['AWS_ACCOUNT_ID']}:role/{env_vars['LAMBDA_EXECUTION_ROLE_NAME']}"
-    env_vars["S3_BUCKET_NAME"] = f"open-rss-articles-{env_vars['AWS_REGION']}"
+    # MongoDB and Redis Configuration
+    env_vars["MONGODB_URL"] = get_env_value("MONGODB_URL", "Enter MongoDB URL:", options=["mongodb://localhost:27017"], advanced=advanced_mode)
+    env_vars["MONGODB_ARTICLES_DB_NAME"] = get_env_value("MONGODB_ARTICLES_DB_NAME", "Enter MongoDB Articles DB Name:", options=["articles_db"], advanced=advanced_mode)
+    env_vars["MONGODB_ARTICLES_COLLECTION_NAME"] = get_env_value("MONGODB_ARTICLES_COLLECTION_NAME", "Enter MongoDB Articles Collection Name:", options=["articles"], advanced=advanced_mode)
+    env_vars["MONGODB_FEEDS_DB_NAME"] = get_env_value("MONGODB_FEEDS_DB_NAME", "Enter MongoDB Feeds DB Name:", options=["feeds_db"], advanced=advanced_mode)
+    env_vars["MONGODB_FEEDS_COLLECTION_NAME"] = get_env_value("MONGODB_FEEDS_COLLECTION_NAME", "Enter MongoDB Feeds Collection Name:", options=["rss_feeds"], advanced=advanced_mode)
     env_vars["REDIS_URL"] = get_env_value("REDIS_URL", "Enter Redis URL:", options=["redis://localhost:6379"], advanced=advanced_mode)
     env_vars["REDIS_QUEUE_NAME"] = get_env_value("REDIS_QUEUE_NAME", "Enter Redis Queue Name:", options=["rss-feed-queue"], advanced=advanced_mode)
-    
-    # Advanced Configuration
-    env_vars["LAMBDA_LAYER_VERSION"] = 3
-    env_vars["LAMBDA_LAYER_NAME"] = f"ingest-rss-lambda-layer-{env_vars['AWS_REGION']}"
-    env_vars["LAMBDA_LAYER_ARN"] = f"arn:aws:lambda:{env_vars['AWS_REGION']}:{env_vars['AWS_ACCOUNT_ID']}:layer:{env_vars['LAMBDA_LAYER_NAME']}:{env_vars['LAMBDA_LAYER_VERSION']}"
-    env_vars["S3_LAYER_BUCKET_NAME"] = f"rss-feed-processor-layers-{env_vars['AWS_REGION']}"
-    env_vars["S3_LAMBDA_ZIPPED_BUCKET_NAME"] = f"open-rss-lambda-{env_vars['AWS_REGION']}"
-    env_vars["S3_LAYER_KEY_NAME"] = get_env_value("S3_LAYER_KEY_NAME", "Enter S3 Layer Key Name:", options=["RSSFeedProcessorDependencies", "CustomDependencies"], advanced=advanced_mode)
-    
-    env_vars["PYTHON_VERSION"] = get_env_value("PYTHON_VERSION", "Enter Python Version:", options=["3.8", "3.9", "3.10", "3.11", "3.12"], advanced=advanced_mode)
-    env_vars["LAMBDA_RUNTIME"] = f"python{env_vars['PYTHON_VERSION']}"
-    env_vars["LAMBDA_TIMEOUT"] = get_env_value("LAMBDA_TIMEOUT", "Enter Lambda Timeout (in seconds):", options=["60", "120", "300"], advanced=advanced_mode)
-    env_vars["LAMBDA_MEMORY"] = get_env_value("LAMBDA_MEMORY", "Enter Lambda Memory (in MB):", options=["128", "256", "512", "1024"], advanced=advanced_mode)
-    
-    env_vars["QUEUE_FILLER_LAMBDA_NAME"] = get_env_value("QUEUE_FILLER_LAMBDA_NAME", "Enter Queue Filler Lambda Name:", options=["RSSQueueFiller", "CustomQueueFiller"], advanced=advanced_mode)
-    env_vars["QUEUE_FILLER_LAMBDA_S3_KEY"] = get_env_value("QUEUE_FILLER_LAMBDA_S3_KEY", "Enter Queue Filler Lambda S3 Key:", options=["RSSQueueFiller.zip", "CustomQueueFiller.zip"], advanced=advanced_mode)
     
     # Logging Configuration
     env_vars["LOG_LEVEL"] = get_env_value("LOG_LEVEL", "Enter Log Level:", options=["DEBUG", "INFO", "WARNING", "ERROR"], advanced=advanced_mode)
@@ -90,7 +52,7 @@ def main():
     env_vars["TEST"] = get_env_value("TEST", "Enter Test Value:", options=["0", "1"], advanced=advanced_mode)
     
     # Storage Strategy
-    env_vars["STORAGE_STRATEGY"] = get_env_value("STORAGE_STRATEGY", "Choose Storage Strategy:", options=["s3", "qdrant"], advanced=advanced_mode)
+    env_vars["STORAGE_STRATEGY"] = "mongodb"
 
     # Qdrant Configuration (only if qdrant is selected)
     if env_vars["STORAGE_STRATEGY"] == "qdrant":

@@ -6,6 +6,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017')
+MONGODB_FEEDS_DB_NAME = os.getenv('MONGODB_FEEDS_DB_NAME', 'feeds_db')
+MONGODB_FEEDS_COLLECTION_NAME = os.getenv('MONGODB_FEEDS_COLLECTION_NAME', 'rss_feeds')
+
 def upload_rss_feeds(rss_feeds, mongo_url, db_name, collection_name):
     client = MongoClient(mongo_url)
     collection = client[db_name][collection_name]
@@ -33,10 +37,7 @@ def upload_rss_feeds(rss_feeds, mongo_url, db_name, collection_name):
     )
 
 if __name__ == "__main__":
-    mongo_url = os.getenv('MONGODB_URL', 'mongodb://localhost:27017')
-    db_name = os.getenv('MONGODB_DB_NAME', 'ingestrss')
-    collection_name = os.getenv('MONGODB_COLLECTION_NAME', 'rss_feeds')
     with open('rss_feeds.json') as f:
         rss_feeds = json.load(f)
     logger.info(f"Loaded RSS feeds: {rss_feeds}")
-    upload_rss_feeds(rss_feeds, mongo_url, db_name, collection_name)
+    upload_rss_feeds(rss_feeds, MONGODB_URL, MONGODB_FEEDS_DB_NAME, MONGODB_FEEDS_COLLECTION_NAME)

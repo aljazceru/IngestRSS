@@ -2,7 +2,7 @@ import os
 import time
 import logging
 
-from src.infra.lambdas.RSSFeedProcessorLambda.src.lambda_function import lambda_handler
+from src.feed_processing.worker_main import worker_main
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ def main():
     logger.info("Starting worker loop")
     while True:
         try:
-            lambda_handler({}, None)
+            worker_main()
         except Exception as exc:
             logger.exception("Worker iteration failed: %s", exc)
         time.sleep(SLEEP_SECONDS)

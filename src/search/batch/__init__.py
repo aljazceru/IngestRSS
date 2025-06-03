@@ -1,3 +1,3 @@
-from .downloader import S3BatchDownloader
+from .downloader import MongoDBBatchDownloader
 
-__all__ = ['S3BatchDownloader']
+__all__ = ['MongoDBBatchDownloader']
